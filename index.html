@@ -3,66 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini XML Prompt Generator</title>
+    <title>Prompt Architect</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 font-sans">
-    <div class="max-w-2xl mx-auto space-y-6">
-        <header class="text-center py-4">
-            <h1 class="text-2xl font-bold text-blue-400">XML Prompt Architect</h1>
-            <p class="text-gray-400 text-sm">Generate structured context for Gemini</p>
+<body class="bg-slate-950 text-slate-200 min-h-screen p-4 sm:p-8 font-sans">
+    <div class="max-w-3xl mx-auto space-y-8">
+        <header class="border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-black text-white tracking-tight">XML PROMPT <span class="text-blue-500">ENGINEER</span></h1>
+            <p class="text-slate-400 text-sm mt-1">Structured context generator for LLM injection.</p>
         </header>
 
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
-            <div>
-                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Role / Instruction</label>
-                <input id="role" type="text" placeholder="e.g., World-class Application Engineer" class="w-full bg-gray-700 border border-gray-600 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Persona / Role</label>
+                        <input id="role" type="text" placeholder="e.g. Application Engineer" 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">One-Sentence Task</label>
+                        <input id="task" type="text" placeholder="e.g. Analyze the provided schema" 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tone</label>
+                        <select id="tone" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none appearance-none">
+                            <option>Professional</option>
+                            <option>Direct/Concise</option>
+                            <option>Academic</option>
+                            <option>Witty</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Thinking Level</label>
+                        <select id="thinking" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none appearance-none">
+                            <option value="High (Reasoning)">High</option>
+                            <option value="Low (Chat)">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Format</label>
+                        <input id="format" type="text" placeholder="Markdown" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Length</label>
+                        <input id="length" type="text" placeholder="Under 500 words" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none">
+                    </div>
+                </div>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Context</label>
-                <textarea id="context" rows="3" placeholder="Paste data or background info..." class="w-full bg-gray-700 border border-gray-600 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Context / Data</label>
+                <textarea id="context" rows="6" placeholder="Paste the core data here..." 
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none transition-all font-mono text-sm"></textarea>
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Task</label>
-                <input id="task" type="text" placeholder="One-sentence goal..." class="w-full bg-gray-700 border border-gray-600 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Constraints (One per line)</label>
-                <textarea id="constraints" rows="3" placeholder="- Format: XML&#10;- Tone: Professional" class="w-full bg-gray-700 border border-gray-600 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-            </div>
-
-            <button onclick="generateXML()" class="w-full bg-blue-600 hover:bg-blue-500 transition-colors font-bold py-3 rounded-lg shadow-md">
+            <button onclick="generateXML()" id="copyBtn" 
+            class="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-all text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-widest text-sm">
                 Generate & Copy XML
             </button>
         </div>
 
-        <div id="outputContainer" class="hidden animate-pulse">
-            <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Live Output (Auto-Copied)</label>
-            <pre id="output" class="bg-black p-4 rounded border border-gray-700 text-green-400 text-xs overflow-x-auto whitespace-pre-wrap"></pre>
+        <div id="outputContainer" class="hidden space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Output Preview</span>
+                <span class="text-xs text-green-500 font-bold animate-pulse">✓ AUTO-COPIED</span>
+            </div>
+            <pre id="output" class="bg-black border border-slate-800 p-4 rounded-xl text-blue-400 text-xs overflow-x-auto whitespace-pre-wrap font-mono"></pre>
         </div>
     </div>
 
     <script>
         function generateXML() {
-            const role = document.getElementById('role').value;
-            const context = document.getElementById('context').value;
-            const task = document.getElementById('task').value;
-            const constraints = document.getElementById('constraints').value;
+            const fields = {
+                role: document.getElementById('role').value || "Expert Assistant",
+                context: document.getElementById('context').value || "[No context provided]",
+                task: document.getElementById('task').value || "Process the data.",
+                tone: document.getElementById('tone').value,
+                thinking: document.getElementById('thinking').value,
+                format: document.getElementById('format').value || "Markdown",
+                length: document.getElementById('length').value || "Variable"
+            };
 
             const xmlResult = `<system_instruction>
-You are a ${role}. You answer with precision and avoid fluff.
+You are a world-class ${fields.role}. You answer with precision and avoid fluff.
 </system_instruction>
 <context>
-${context}
+${fields.context}
 </context>
 <task>
-${task}
+${fields.task}
 </task>
 <constraints>
-${constraints.split('\n').filter(c => c.trim() !== '').map(c => c.startsWith('-') ? c : `- ${c}`).join('\n')}
+- Tone: ${fields.tone}
+- Format: ${fields.format}
+- Length: ${fields.length}
+- Thinking_Level: ${fields.thinking}
 </constraints>
 <bridge>
 Based on the context provided above, execute the task.
@@ -70,13 +114,12 @@ Based on the context provided above, execute the task.
 
             const outputElem = document.getElementById('output');
             const container = document.getElementById('outputContainer');
+            const btn = document.getElementById('copyBtn');
             
             outputElem.textContent = xmlResult;
             container.classList.remove('hidden');
 
-            // Copy to clipboard
             navigator.clipboard.writeText(xmlResult).then(() => {
-                const btn = document.querySelector('button');
                 const originalText = btn.innerText;
                 btn.innerText = "COPIED TO CLIPBOARD!";
                 btn.classList.replace('bg-blue-600', 'bg-green-600');
