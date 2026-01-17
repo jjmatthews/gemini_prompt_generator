@@ -3,151 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prompt Architect Pro</title>
+    <title>YAML Architect - Prompting Engine</title>
+    <!-- React and ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+
+        .scrollbar-custom::-webkit-scrollbar { width: 8px; }
+        .scrollbar-custom::-webkit-scrollbar-track { background: #000; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        input::-webkit-calendar-picker-indicator {
+            opacity: 0.3;
+            filter: invert(1);
+            cursor: pointer;
+        }
+        input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-in-from-top-2 { from { transform: translateY(-0.5rem); } to { transform: translateY(0); } }
+        .animate-in {
+            animation: fade-in 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards, 
+                       slide-in-from-top-2 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen p-4 sm:p-8 font-sans">
-    <div class="max-w-4xl mx-auto space-y-8">
-        <header class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <div>
-                <h1 class="text-3xl font-black text-white tracking-tight uppercase">XML <span class="text-blue-500">Architect</span></h1>
-                <p class="text-slate-400 text-xs font-mono uppercase tracking-widest mt-1">Few-Shot Prompting Engine</p>
-            </div>
-            <button onclick="clearAll()" class="text-xs font-bold text-red-500 border border-red-900/50 px-3 py-1 rounded hover:bg-red-900/20 transition-all uppercase">
-                Reset Form
-            </button>
-        </header>
+<body class="bg-slate-950 text-slate-200 min-h-screen selection:bg-amber-500/30">
+    <div id="root"></div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Persona / Role</label>
-                        <input id="role" type="text" placeholder="e.g. Application Engineer" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Main Task</label>
-                        <input id="task" type="text" placeholder="The primary goal..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none focus:border-blue-500">
-                    </div>
-                </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Tone</label>
-                        <select id="tone" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none">
-                            <option value="">Optional</option>
-                            <option>Professional</option>
-                            <option>Direct/Concise</option>
-                            <option>Academic</option>
-                            <option>Witty</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Thinking</label>
-                        <select id="thinking" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none">
-                            <option value="">Optional</option>
-                            <option value="High">High</option>
-                            <option value="Low">Low</option>
-                        </select>
-                    </div>
-                    <div><input id="format" type="text" placeholder="Format" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-white outline-none"></div>
-                    <div><input id="length" type="text" placeholder="Length" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-white outline-none"></div>
-                </div>
-            </div>
+        // Inline SVG Icons to ensure single-file portability without external library dependencies
+        const Icons = {
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            Trash2: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            RotateCcw: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>,
+            Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>,
+            Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>,
+            BrainCircuit: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .52 8.208A3 3 0 1 0 12 18"></path><path d="M12 13h1"></path><path d="M14.5 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H13"></path><path d="M15 13h1"></path><path d="M19 13h1"></path><path d="M12 5h1"></path><path d="M13 3.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1.5"></path><path d="M13 12v1"></path><path d="M14 8h1"></path></svg>,
+            FileJson: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"></path><path d="M14 12a1 1 0 0 1 1 1v1a1 1 0 0 0 1 1 1 1 0 0 0-1 1v1a1 1 0 0 1-1 1"></path></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            Settings2: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>,
+            MousePointer2: () => <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 4 7.07 17 2.51-7.39L21 11.07z"></path><path d="M13 13l6 6"></path></svg>,
+            Dices: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3.12l-3.9-3.9a2.24 2.24 0 0 0-3.12 0L10.92 7"></path><rect width="12" height="12" x="6" y="2" rx="2" ry="2" transform="rotate(-45 12 12)"></rect><path d="M11 15h.01"></path><path d="M18 9h.01"></path><path d="M16 11h.01"></path><path d="M13 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        };
 
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Context Data</label>
-                <textarea id="context" rows="4" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none focus:border-blue-500 font-mono text-sm"></textarea>
-            </div>
-
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Examples (Few-Shot)</label>
-                    <button onclick="addExample()" class="text-[10px] font-bold bg-slate-800 text-blue-400 px-2 py-1 rounded border border-blue-900/50">+ Add Pair</button>
-                </div>
-                <div id="exampleContainer" class="space-y-4">
-                    </div>
-            </div>
-
-            <button onclick="generateXML()" id="copyBtn" class="w-full bg-blue-600 hover:bg-blue-500 transition-all text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-widest text-sm">
-                Generate & Copy XML
-            </button>
-        </div>
-
-        <div id="outputContainer" class="hidden space-y-2">
-            <pre id="output" class="bg-black border border-slate-800 p-4 rounded-xl text-blue-400 text-[10px] overflow-x-auto whitespace-pre-wrap font-mono"></pre>
-        </div>
-    </div>
-
-    <script>
-        function addExample() {
-            const container = document.getElementById('exampleContainer');
-            const div = document.createElement('div');
-            div.className = "example-pair grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 relative";
-            div.innerHTML = `
-                <textarea placeholder="Example Input" class="ex-input bg-slate-900 border border-slate-700 rounded p-2 text-xs outline-none h-20"></textarea>
-                <textarea placeholder="Example Output" class="ex-output bg-slate-900 border border-slate-700 rounded p-2 text-xs outline-none h-20"></textarea>
-                <button onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-900 text-white rounded-full w-5 h-5 text-[10px]">×</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function clearAll() {
-            if(confirm("Clear all fields?")) {
-                document.querySelectorAll('input, textarea, select').forEach(el => el.value = "");
-                document.getElementById('exampleContainer').innerHTML = "";
-                document.getElementById('outputContainer').classList.add('hidden');
-            }
-        }
-
-        function generateXML() {
-            const role = document.getElementById('role').value || "Assistant";
-            const task = document.getElementById('task').value || "Process the request.";
-            const context = document.getElementById('context').value || "";
+        const App = () => {
+            const [formData, setFormData] = useState({
+                role: '',
+                task: '',
+                tone: '',
+                thinking: '',
+                format: '',
+                length: '',
+                context: '',
+                vsEnabled: false,
+                vsCount: 5,
+                vsCoT: false
+            });
             
-            // Constraints
-            const cFields = { tone: document.getElementById('tone').value, format: document.getElementById('format').value, length: document.getElementById('length').value, thinking: document.getElementById('thinking').value };
-            const cList = [];
-            if(cFields.tone) cList.push(`- Tone: ${cFields.tone}`);
-            if(cFields.format) cList.push(`- Format: ${cFields.format}`);
-            if(cFields.length) cList.push(`- Length: ${cFields.length}`);
-            if(cFields.thinking) cList.push(`- Thinking_Level: ${cFields.thinking}`);
-            const constraintsXML = cList.length ? `\n<constraints>\n${cList.join('\n')}\n</constraints>` : "";
+            const [examples, setExamples] = useState([]);
+            const [yamlOutput, setYamlOutput] = useState('');
+            const [copied, setCopied] = useState(false);
+            const autoCopyTimeout = useRef(null);
 
-            // Examples
-            const exBlocks = document.querySelectorAll('.example-pair');
-            let examplesXML = "";
-            let exItems = "";
-            exBlocks.forEach(block => {
-                const input = block.querySelector('.ex-input').value;
-                const output = block.querySelector('.ex-output').value;
-                if(input && output) {
-                    exItems += `    <example>\n        <input>${input}</input>\n        <output>${output}</output>\n    </example>\n`;
+            const formatYamlValue = (val, indentLevel = 0) => {
+                if (!val) return '""';
+                const indent = '  '.repeat(indentLevel);
+                if (val.includes('\n')) {
+                    return `|\n${val.split('\n').map(line => indent + '  ' + line).join('\n')}`;
                 }
-            });
-            if(exItems) examplesXML = `\n<examples>\n${exItems}</examples>`;
+                return `"${val.replace(/"/g, '\\"')}"`;
+            };
 
-            const finalXML = `<system_instruction>
-You are a world-class ${role}. You answer with precision and avoid fluff.
-</system_instruction>
-<context>
-${context}
-</context>
-<task>
-${task}
-</task>${constraintsXML}
-<bridge>
-Based on the context provided above, execute the task.
-</bridge>${examplesXML}`;
+            const generateYAML = () => {
+                const { role, task, context, tone, format, length, thinking, vsEnabled, vsCount, vsCoT } = formData;
+                let yaml = "";
+                yaml += `system_instruction:\n`;
+                yaml += `  role: ${formatYamlValue(role || "Assistant")}\n`;
+                yaml += `  description: ${formatYamlValue(`You are a world-class ${role || "Assistant"}. You answer with precision and avoid fluff.`)}\n`;
+                if (context) yaml += `context: ${formatYamlValue(context, 1)}\n`;
+                yaml += `task: ${formatYamlValue(task || "Process the request.")}\n`;
 
-            document.getElementById('output').textContent = finalXML;
-            document.getElementById('outputContainer').classList.remove('hidden');
-            navigator.clipboard.writeText(finalXML).then(() => {
-                const btn = document.getElementById('copyBtn');
-                btn.innerText = "COPIED!";
-                setTimeout(() => btn.innerText = "Generate & Copy XML", 1500);
-            });
-        }
+                if (vsEnabled) {
+                    yaml += `sampling_strategy:\n`;
+                    yaml += `  method: "Verbalized Sampling"\n`;
+                    yaml += `  candidates_count: ${vsCount}\n`;
+                    yaml += `  instruction: ${formatYamlValue(
+                        `${vsCoT ? "Think step-by-step, then generate" : "Generate"} ${vsCount} distinct and diverse possible responses for this task. For each response, provide its corresponding probability score reflecting its likelihood relative to the others.`
+                    )}\n`;
+                }
+
+                const constraints = [];
+                if (tone) constraints.push(`  tone: ${formatYamlValue(tone)}`);
+                if (format) constraints.push(`  format: ${formatYamlValue(format)}`);
+                if (length) constraints.push(`  length: ${formatYamlValue(length)}`);
+                if (thinking) constraints.push(`  thinking_level: ${formatYamlValue(thinking)}`);
+                if (constraints.length > 0) yaml += `constraints:\n${constraints.join('\n')}\n`;
+
+                const validExamples = examples.filter(ex => ex.input.trim() && ex.output.trim());
+                if (validExamples.length > 0) {
+                    yaml += `examples:\n`;
+                    validExamples.forEach(ex => {
+                        yaml += `  - input: ${formatYamlValue(ex.input, 2)}\n`;
+                        yaml += `    output: ${formatYamlValue(ex.output, 2)}\n`;
+                    });
+                }
+                return yaml;
+            };
+
+            useEffect(() => {
+                const newYaml = generateYAML();
+                setYamlOutput(newYaml);
+                if (newYaml.trim()) {
+                    if (autoCopyTimeout.current) clearTimeout(autoCopyTimeout.current);
+                    autoCopyTimeout.current = setTimeout(() => {
+                        copyToClipboard(newYaml, false);
+                    }, 800);
+                }
+            }, [formData, examples]);
+
+            const copyToClipboard = (text, showVisual = true) => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    if (showVisual) {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }
+                } catch (err) {}
+                document.body.removeChild(textarea);
+            };
+
+            const updateField = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const addExample = () => {
+                setExamples([...examples, { id: Math.random().toString(36).substr(2, 9), input: '', output: '' }]);
+            };
+
+            const updateExample = (id, field, value) => {
+                setExamples(examples.map(ex => ex.id === id ? { ...ex, [field]: value } : ex));
+            };
+
+            const removeExample = (id) => {
+                setExamples(examples.filter(ex => ex.id !== id));
+            };
+
+            const resetAll = () => {
+                if (window.confirm("Reset the prompt architect?")) {
+                    setFormData({
+                        role: '', task: '', tone: '', thinking: '', format: '', length: '', context: '',
+                        vsEnabled: false, vsCount: 5, vsCoT: false
+                    });
+                    setExamples([]);
+                }
+            };
+
+            return (
+                <div className="p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto space-y-8">
+                        <header className="flex justify-between items-center border-b border-slate-800 pb-6">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                   <div className="bg-amber-500 p-1.5 rounded-lg shadow-lg shadow-amber-900/20 text-black">
+                                     <Icons.Settings2 />
+                                   </div>
+                                   <h1 className="text-3xl font-black text-white tracking-tight uppercase">YAML <span className="text-amber-500">Architect</span></h1>
+                                </div>
+                                <p className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.2em] mt-2 ml-1">GitHub Pages Deployment Ready</p>
+                            </div>
+                            <button onClick={resetAll} className="flex items-center gap-2 text-xs font-bold text-red-500 border border-red-900/40 px-4 py-2 rounded-lg hover:bg-red-900/10 transition-all uppercase">
+                                <Icons.RotateCcw /> Reset
+                            </button>
+                        </header>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div className="lg:col-span-7 space-y-6">
+                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest"><Icons.Sparkles /> Persona / Role</label>
+                                                <input type="text" placeholder="Creative Director" value={formData.role} onChange={e => updateField('role', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-amber-500/50 transition-all" />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest"><Icons.Layers /> Main Task</label>
+                                                <input type="text" placeholder="Goal..." value={formData.task} onChange={e => updateField('task', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-amber-500/50 transition-all" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 content-start">
+                                            <div className="relative">
+                                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Tone</label>
+                                                <input list="tone-options" placeholder="Style..." value={formData.tone} onChange={e => updateField('tone', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-amber-500/50" />
+                                                <datalist id="tone-options">
+                                                    <option value="Professional" /><option value="Creative/Vivid" /><option value="Direct/Concise" /><option value="Academic" /><option value="Witty/Friendly" />
+                                                </datalist>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Thinking</label>
+                                                <select value={formData.thinking} onChange={e => updateField('thinking', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-amber-500/50">
+                                                    <option value="">Optional</option><option value="High">High (Reasoning)</option><option value="Low">Low (Fast)</option>
+                                                </select>
+                                            </div>
+                                            <input type="text" placeholder="Format" value={formData.format} onChange={e => updateField('format', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500/50" />
+                                            <input type="text" placeholder="Length" value={formData.length} onChange={e => updateField('length', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500/50" />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-amber-500">
+                                                <Icons.Dices /><label className="text-[10px] font-bold uppercase tracking-widest">Verbalized Sampling</label>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" checked={formData.vsEnabled} onChange={e => updateField('vsEnabled', e.target.checked)} />
+                                                <div className="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:bg-amber-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+                                            </label>
+                                        </div>
+                                        {formData.vsEnabled && (
+                                            <div className="grid grid-cols-2 gap-4 animate-in">
+                                                <div>
+                                                    <label className="block text-[8px] font-bold text-slate-500 uppercase mb-1">Candidates (k)</label>
+                                                    <input type="number" min="2" max="20" value={formData.vsCount} onChange={e => updateField('vsCount', parseInt(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-amber-400 outline-none focus:border-amber-500/40" />
+                                                </div>
+                                                <div className="flex flex-col justify-end">
+                                                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-400"><input type="checkbox" checked={formData.vsCoT} onChange={e => updateField('vsCoT', e.target.checked)} className="rounded border-slate-700 bg-slate-800 text-amber-500" /> Enable VS-CoT</label>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest"><Icons.BrainCircuit /> Context Data</label>
+                                        <textarea rows="3" placeholder="Background data..." value={formData.context} onChange={e => updateField('context', e.target.value)} className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-white outline-none focus:border-amber-500/50 font-mono text-sm min-h-[100px]"></textarea>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4 border-t border-slate-800">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Examples</label>
+                                            <button onClick={addExample} className="flex items-center gap-1.5 text-[10px] font-bold bg-amber-900/20 text-amber-500 px-3 py-1.5 rounded-lg border border-amber-900/40 hover:bg-amber-900/40 transition-colors">
+                                                <Icons.Plus /> Add Pair
+                                            </button>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {examples.map((ex) => (
+                                                <div key={ex.id} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800 relative group">
+                                                    <textarea placeholder="Input" value={ex.input} onChange={e => updateExample(ex.id, 'input', e.target.value)} className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs outline-none h-20 font-mono focus:border-slate-600"></textarea>
+                                                    <textarea placeholder="Output" value={ex.output} onChange={e => updateExample(ex.id, 'output', e.target.value)} className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs outline-none h-20 font-mono focus:border-slate-600"></textarea>
+                                                    <button onClick={() => removeExample(ex.id)} className="absolute -top-2 -right-2 bg-red-900 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Icons.X /></button>
+                                                </div>
+                                            ))}
+                                            {examples.length === 0 && <div className="text-center py-6 border-2 border-dashed border-slate-800/50 rounded-xl text-slate-600 text-[10px] uppercase tracking-widest">No examples defined</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-5 space-y-4">
+                                <div className="flex items-center justify-between px-2">
+                                    <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2"><Icons.FileJson /> YAML Output</h2>
+                                    <div className="flex items-center gap-2">
+                                        {copied && <span className="text-[10px] font-bold text-emerald-500 animate-pulse uppercase tracking-widest">Synced</span>}
+                                        <button onClick={() => copyToClipboard(yamlOutput)} className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all transform active:scale-95 shadow-xl ${copied ? 'bg-emerald-600 text-white' : 'bg-amber-500 hover:bg-amber-400 text-black'}`}>
+                                            <Icons.Copy /> Copy Now
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="relative group h-full">
+                                    <div className="absolute -inset-0.5 bg-gradient-to-b from-amber-500/20 to-orange-500/20 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000"></div>
+                                    <div className="relative bg-black rounded-2xl h-full min-h-[600px] border border-slate-800 flex flex-col overflow-hidden">
+                                        <div className="flex items-center gap-1.5 px-4 py-3 bg-slate-900/50 border-b border-slate-800/50">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" /><div className="w-2.5 h-2.5 rounded-full bg-amber-500/40" /><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
+                                            <span className="ml-3 text-[10px] text-slate-500 font-mono tracking-widest uppercase opacity-70">prompt_config.yaml</span>
+                                            <div className="ml-auto flex items-center gap-1 text-[8px] text-amber-500/50 font-mono"><Icons.MousePointer2 /> AUTO-COPY ACTIVE</div>
+                                        </div>
+                                        <div className="p-6 flex-1 overflow-auto scrollbar-custom font-mono">
+                                            <pre className="text-amber-400/90 text-[11px] md:text-xs leading-relaxed whitespace-pre-wrap">{yamlOutput}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <footer className="text-center pt-8 text-slate-600 text-[10px] font-medium uppercase tracking-[0.1em]">Simplified YAML · Research Backed · Diversity Optimized</footer>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
