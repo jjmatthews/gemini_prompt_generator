@@ -137,8 +137,27 @@
             }, [formData, examples]);
 
             const copyToClipboard = (text, showVisual = true) => {
+                // Use modern Clipboard API if available to prevent focus theft
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        if (showVisual) {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        }
+                    }).catch(err => {
+                        fallbackCopy(text, showVisual);
+                    });
+                } else {
+                    fallbackCopy(text, showVisual);
+                }
+            };
+
+            const fallbackCopy = (text, showVisual) => {
+                const activeEl = document.activeElement; // Save focus
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
+                textarea.style.position = 'fixed'; // Prevent scrolling
+                textarea.style.opacity = '0';
                 document.body.appendChild(textarea);
                 textarea.select();
                 try {
@@ -149,6 +168,7 @@
                     }
                 } catch (err) {}
                 document.body.removeChild(textarea);
+                if (activeEl && activeEl.focus) activeEl.focus(); // Restore focus
             };
 
             const updateField = (field, value) => {
@@ -267,7 +287,7 @@
                                             {examples.map((ex) => (
                                                 <div key={ex.id} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800 relative group">
                                                     <textarea placeholder="Input" value={ex.input} onChange={e => updateExample(ex.id, 'input', e.target.value)} className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs outline-none h-20 font-mono focus:border-slate-600"></textarea>
-                                                    <textarea placeholder="Output" value={ex.output} onChange={e => updateExample(ex.id, 'output', e.target.value)} className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs outline-none h-20 font-mono focus:border-slate-600"></textarea>
+                                                    <textarea placeholder="Output" value={ex.output} onChange={e => updateExample(id, 'output', e.target.value)} className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs outline-none h-20 font-mono focus:border-slate-600"></textarea>
                                                     <button onClick={() => removeExample(ex.id)} className="absolute -top-2 -right-2 bg-red-900 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Icons.X /></button>
                                                 </div>
                                             ))}
